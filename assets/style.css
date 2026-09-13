@@ -1,0 +1,762 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (C) Arduino s.r.l. and/or its affiliated companies
+ * SPDX-License-Identifier: MPL-2.0
+ */
+@import url('fonts/fonts.css');
+
+:root {
+  --bg: #0d1117;
+  --bg-elevated: #161b22;
+  --surface: #1c2128;
+  --surface-hover: #22272e;
+  --border: #30363d;
+  --border-strong: #484f58;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --accent: #00b4b8;
+  --accent-soft: rgba(0, 180, 184, 0.15);
+  --accent-hover: #00d4d9;
+  --danger: #f85149;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+body > div {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ===== Header (slim, floating) ===== */
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: linear-gradient(to bottom, rgba(13, 17, 23, 0.92), transparent);
+  pointer-events: none;
+}
+
+.header > * {
+  pointer-events: auto;
+}
+
+.arduino-text {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.4px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.arduino-logo {
+  height: 32px;
+  width: auto;
+  opacity: 0.85;
+  filter: brightness(1.1);
+}
+
+/* ===== Subheader (compact status bar) ===== */
+.subheader {
+  position: absolute;
+  top: 52px;
+  left: 20px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.subheader > img {
+  flex-shrink: 0;
+  filter: brightness(1.2);
+}
+
+.subheader-info {
+  background: rgba(28, 33, 40, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex: 1;
+  align-items: center;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.subheader-content {
+  flex: 1;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.subheader-info span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.subheader-info-bold {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ===== Main layout – full screen camera ===== */
+.main-content {
+  flex: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-webcam-status='disconnected'] .main-content {
+  flex-direction: column;
+}
+
+#videoPausedPlaceholder,
+#dynamicIframe {
+  display: none;
+}
+
+[data-webcam-status='connected'] #videoPausedPlaceholder {
+  display: flex;
+}
+
+[data-webcam-status='streaming'] #dynamicIframe {
+  display: block;
+}
+
+[data-webcam-status='disconnected'] .subheader-info :nth-child(n + 2) {
+  display: none;
+}
+
+[data-webcam-status='disconnected'] .camera-status {
+  display: flex;
+}
+
+[data-webcam-status='disconnected'] .right-column {
+  display: none;
+}
+
+/* ===== Full-screen video container ===== */
+.container#video-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  background: #000;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+#videoFeedContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  position: relative;
+}
+
+#dynamicIframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+  object-fit: cover;
+}
+
+/* ===== Camera status placeholders ===== */
+.camera-status {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  padding: 40px 24px;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+}
+
+.camera-status .feedback-text {
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-secondary);
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+#qrSecretText {
+  font-size: 13px;
+  color: white;
+  font-family: var(--font-mono);
+  margin-top: 6px;
+}
+
+/* ===== Right column – floating sidebar ===== */
+.right-column {
+  position: absolute;
+  top: 70px;
+  right: 16px;
+  bottom: 16px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 20;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.right-column::-webkit-scrollbar {
+  width: 5px;
+}
+.right-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+.right-column::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.container.container-right {
+  background: rgba(28, 33, 40, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+/* ===== Confidence controls ===== */
+.control-group {
+  position: relative;
+}
+
+.control-confidence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.control-group label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.slider-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slider-container {
+  position: relative;
+  width: 100%;
+}
+
+#confidenceSlider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #30363d;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  margin: 20px 0 6px;
+  cursor: pointer;
+}
+
+#confidenceSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  position: relative;
+  bottom: 5px;
+  z-index: 2;
+  box-shadow: 0 0 0 3px rgba(0, 180, 184, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#confidenceSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 5px rgba(0, 180, 184, 0.3);
+}
+
+#confidenceSlider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: transparent;
+}
+
+#confidenceSlider::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #30363d;
+  border: none;
+}
+
+#confidenceSlider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 0 3px rgba(0, 180, 184, 0.25);
+}
+
+.slider-progress {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+  transition: width 0.1s ease;
+}
+
+.confidence-value-display {
+  position: absolute;
+  top: -4px;
+  transform: translateX(-50%);
+  color: var(--accent);
+  padding: 2px 6px;
+  pointer-events: none;
+  z-index: 3;
+  white-space: nowrap;
+  transition: left 0.1s ease;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.confidence-limits {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  min-width: 12px;
+}
+
+.btn-tertiary {
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  min-width: 52px;
+  height: 32px;
+  color: var(--text-primary);
+}
+
+.btn-tertiary:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.confidence-input {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  width: 36px;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  cursor: text;
+  font-family: var(--font-mono);
+}
+
+.confidence-input:focus {
+  background: var(--accent-soft);
+  border-radius: 4px;
+}
+
+.reset-icon {
+  width: 15px;
+  height: 15px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  filter: invert(1) brightness(0.9);
+}
+
+.btn-tertiary:hover .reset-icon {
+  opacity: 1;
+}
+
+/* ===== Feedback section ===== */
+.feedback-section {
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.feedback-text {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.feedback-detection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.feedback-detection .percentage {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--text-primary);
+}
+
+.feedback-detection img {
+  max-width: 52px;
+  max-height: 52px;
+}
+
+.feedback-detection p {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+/* ===== Recent detections ===== */
+.recent-detections-section {
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-scans-title-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.recent-scans-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+#recentDetections {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+#recentDetections li {
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  padding: 12px 0;
+  word-break: break-all;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-primary);
+}
+
+#recentDetections li:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.detection-info,
+.detection-time-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Info buttons & popovers ===== */
+.info-btn {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  border-radius: 50%;
+  background-color: #30363d;
+  padding: 2px;
+  transition: background 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+  filter: invert(0.7);
+}
+
+.info-btn:hover {
+  background-color: #484f58;
+}
+
+.popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  display: none;
+  background: var(--surface);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  z-index: 40;
+  width: 250px;
+  color: var(--text-primary);
+  font-weight: 400;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.popover ul {
+  padding-inline-start: 18px;
+  margin: 8px 0 0;
+}
+
+.popover.active {
+  display: block;
+}
+
+/* ===== Error ===== */
+.error-message {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(248, 81, 73, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  font-weight: 600;
+  text-align: center;
+  font-size: 13px;
+  backdrop-filter: blur(8px);
+}
+
+/* ===== Empty states ===== */
+.no-recent-scans {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 8px;
+  padding: 20px 0;
+  font-size: 13px;
+}
+
+/* ===== Scan compatibility styles ===== */
+.scan-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#scan-message {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.scan-header {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.scan-content,
+.scan-content-time,
+.scan-percentage {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scan-percentage {
+  font-weight: 500;
+  width: 40px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.scan-content-time {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.cell-border {
+  border-top: 1px solid var(--border);
+}
+
+.scan-cell-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 0;
+}
+
+.scan-error {
+  text-align: center;
+}
+
+.scan-content {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-transform: capitalize;
+  flex: 1;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .right-column {
+    width: 280px;
+    top: 60px;
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .header {
+    padding: 12px 14px;
+  }
+
+  .arduino-text {
+    font-size: 16px;
+  }
+
+  .subheader {
+    top: 48px;
+    left: 12px;
+    max-width: 280px;
+  }
+}
+
+@media (max-width: 520px) {
+  .right-column {
+    width: calc(100% - 20px);
+    max-height: 42vh;
+    top: auto;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .subheader {
+    max-width: calc(100% - 24px);
+  }
+
+  .arduino-logo {
+    height: 26px;
+  }
+}

@@ -1,0 +1,13 @@
+name: Driver Drowsiness Detection
+description: This example showcases object detection within a live feed from a smartphone's camera.
+ports:
+- 8080
+bricks:
+- arduino:video_object_detection:
+    model: ei-model-1034592-3
+    variables:
+      EI_OBJ_DETECTION_MODEL: /home/arduino/.arduino-bricks/ei-models/mindful-drive-pro-.eim
+    devices:
+    - remote_camera_0
+- arduino:web_ui: {}
+icon: 📽️
