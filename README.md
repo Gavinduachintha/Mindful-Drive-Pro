@@ -1,196 +1,122 @@
-# Detect Objects on Smartphone Camera
+<div align="center">
 
-The **Detect Objects on Smartphone Camera** example lets you detect objects on a live feed from your smartphone's camera and visualize bounding boxes around the detections in real-time.
+# 🚗 Mindful Drive Pro
 
-**Note:** This example uses your smartphone as a remote camera input. Both the Arduino UNO Q and your smartphone must be connected to the same network.
+### A camera-based driver-awareness prototype for Arduino UNO Q
 
-![Detect Objects on Camera](assets/docs_assets/mobile-object-detection.png)
+Live camera streaming · Edge Impulse object detection · Arduino hardware
 
-This example uses a pre-trained model to detect objects on a live video feed provided by the **Arduino IoT Remote** mobile app. The workflow involves pairing your phone to the board via a QR code, streaming video over the network, processing it through an AI model using the `video_objectdetection` Brick, and displaying the bounding boxes around detections. The App is managed from an interactive web interface.
+[![Platform](https://img.shields.io/badge/Platform-Arduino%20UNO%20Q-00979D?style=for-the-badge&logo=arduino&logoColor=white)](https://docs.arduino.cc/hardware/uno-q/)
+[![AI](https://img.shields.io/badge/AI-Edge%20Impulse-5B4BDB?style=for-the-badge)](https://edgeimpulse.com/)
+[![Language](https://img.shields.io/badge/Python%20%2B%20JavaScript-Stack-3776AB?style=for-the-badge&logo=python&logoColor=white)](#-technology-stack)
 
-## Bricks Used
+</div>
 
-The example uses the following Bricks:
-
-- `web_ui`: Brick to create a web interface to display the classification results, model controls, and the pairing QR code.
-- `video_objectdetection`: Brick to classify objects within a live video feed.
-
-## Hardware and Software Requirements
-
-### Hardware
-
-- [Arduino® UNO Q](https://store.arduino.cc/products/uno-q) or Arduino VENTUNO Q
-- Smartphone (iOS or Android)
-- Personal computer with internet access (to view the Web UI)
-
-### Software
-
-- **Arduino App Lab** (running on the board)
-- **Arduino IoT Remote App** (installed on your smartphone)
-
-## How to Use the Example
-
-### Arduino App Lab Setup
-
-1. Ensure your Arduino UNO Q is powered and connected to the network.
-2. Run the App in Arduino App Lab.
-3. The App should open automatically in the web browser. You can open it manually via `<board-name>.local:7000`.
-4. The Web UI will display a **QR Code**.
-
-### Arduino IoT Remote Setup
-
-5. Install the **Arduino IoT Remote** app on your smartphone from your app store.
-6. Open the Arduino IoT Remote app on your phone and log in with your Arduino account.
-7. Go to Devices, tap on the plus icon to set up a new device and select **Stream phone camera to UNO Q**.
-   ![IoT Remote setup](assets/docs_assets/iot-remote.png)
-8. Scan the QR code.
-9. Once connected, the video stream from your phone will appear on the Web UI.
-10. Point your phone at objects and watch as the App detects and recognizes them.
-
-Try with one of the following objects for a special reaction:
-
-- Cat
-- Cell phone
-- Clock
-- Cup
-- Dog
-- Potted plant
-
-## How it Works
-
-This example hosts a Web UI that orchestrates a connection between your phone's camera and the board. The video stream is received over the network, processed using the `video_objectdetection` Brick, and results are sent back to the browser. When an object is detected, it is logged along with the confidence score (e.g. 95% potted plant).
-
-Here is a brief explanation of the full-stack application:
-
-### 🔧 Backend (main.py)
-
-- **Security & Connection**:
-  - Generates a random 6-digit **secret** (`generate_secret`) to secure the connection between the phone and the board.
-  - Initializes a **WebSocketCamera** (`camera = WebSocketCamera(secret=secret, encrypt=True)`). This object acts as the video source.
-
-- **App Initialization**:
-  - **WebUI** (`ui = WebUI()`): Manages the frontend interface.
-  - **VideoObjectDetection**: Initialized with the `camera` object (`VideoObjectDetection(camera, ...)`) to run the object detection on the phone camera stream.
-
-- **Event Handling**:
-  - **Status Updates**: Wires camera status changes (connected, streaming) to the UI.
-  - **UI Connection**: When a user opens the browser (`ui.on_connect`), the backend sends the connection details (IP, port, secret) so the frontend can generate the pairing QR code.
-  - **Detections**: Uses `on_detect_all` to send classification results (`content`, `confidence`, `timestamp`) to the UI.
-
-- **Controls**:
-  - Listens for `override_th` to update the detection confidence threshold dynamically.
+> **Mindful Drive Pro** explores how a compact edge-computing board can combine a camera stream, computer vision, and a simple hardware response. The repository currently demonstrates live **general object detection**; it does not yet contain a trained or validated driver-drowsiness classifier.
 
 ---
 
-### 💻 Frontend (index.html + app.js)
+## ✨ What it does
 
-- **Pairing Process**:
-  - Receives the `secret`, `ip`, and `port` from the backend via WebUI.
-  - Generates a **QR Code** using `qrcode.min.js`. This code contains the credentials required for the mobile app to connect.
+- Pairs a phone camera with the Arduino UNO Q using the Arduino IoT Remote app and a QR code.
+- Streams portrait video to the board over the local network.
+- Runs an Edge Impulse object-detection model and displays labels and confidence scores in a browser UI.
+- Lets the user adjust the detection confidence threshold while the stream is active.
+- Shows the five most recent detections and visual feedback for selected everyday objects.
+- Connects Python detection events to the UNO Q built-in LED through Arduino Router Bridge. The Python callback currently checks for a `close` label; confirm that this matches the labels in the deployed model.
 
-- **Video Feed**:
-  - Once the phone connects, the interface switches from the QR code view to a live video iframe (`/embed`).
+## 🧭 How it works
 
-- **Feedback & Controls**:
-  - **Confidence Slider**: Adjusts the sensitivity of the AI model.
-  - **Visual Feedback**: Displays specific animations when target objects (e.g., "cup", "cat") are detected with high confidence.
-  - **Recent Detections**: Lists the last 5 detected objects with timestamps.
-
----
-
-## Understanding the Code
-
-Once the application is running, you can open it in your browser. At that point, the device begins performing the following:
-
-- **Serving the UI and handling Remote Camera pairing.**
-
-  The backend generates a security code and initializes the WebSocket camera. It waits for the frontend to connect to send these details.
-
-  ```python
-  def generate_secret() -> str:
-    characters = string.digits
-    return ''.join(secrets.choice(characters) for _ in range(6))
-
-  secret = generate_secret()
-  ui = WebUI()
-  resolution = (480, 640)  # Portrait resolution for mobile devices
-  camera = WebSocketCamera(resolution=resolution, secret=secret, encrypt=True, adjustments=resized(resolution, maintain_ratio=True))
-
-  # Send connection details to UI so it can draw the QR code
-  ui.on_connect(lambda sid: ui.send_message("welcome", {
-      "client_name": camera.name,
-      "secret": secret,
-      "status": camera.status,
-      "protocol": camera.protocol,
-      "ip": camera.ip,
-      "port": camera.port
-  }))
-  ```
-
-- **Processing video and broadcasting detections.**
-
-  The `VideoObjectDetection` brick consumes frames from the `camera` object. When objects are found, the callback formats the data and sends it to the browser.
-
-  ```python
-  detection = VideoObjectDetection(camera, confidence=0.5, debounce_sec=0.0)
-
-  # Register a callback for when all objects are detected
-  def send_detections_to_ui(detections: dict):
-    for key, value in detections.items():
-      entry = {
-        "content": key,
-        "confidence": value.get("confidence"),
-        "timestamp": datetime.now(UTC).isoformat()
-      }
-      ui.send_message("detection", entry)
-
-  detection.on_detect_all(send_detections_to_ui)
-  ```
-
-- **Rendering the QR Code (Frontend).**
-
-  In `app.js`, the frontend waits for the `welcome` message to generate the QR code that bridges the phone and the board.
-
-  ```javascript
-  ui.on_message('welcome', async (message) => {
-    webcamState.secret = message.secret;
-    // ... update state ...
-    updateDisplay();
-  });
-
-  function updateDisplay() {
-    if (webcamState.status != 'connected') {
-      // Webcam is not connected yet - show QR code
-      if (webcamState.secret) {
-        generateQRCode(
-          webcamState.secret,
-          webcamState.protocol,
-          webcamState.ip,
-          webcamState.port,
-        );
-      }
-    }
-    // ... else show video iframe ...
-  }
-  ```
-
-- **Executing the event loop.**
-
-  Finally, the backend keeps the application alive, managing the network traffic between the phone, the AI model, and the browser.
-
-  ```python
-  App.run()
-  ```
-
-## Note
-
-This example is written to use HTTP protocol for example purposes.
-If you want to manage a secure HTTPS connection:
-
-- create a copy of this example
-- create certificates files `cert.pem` `key.pem` and save them into `/app/certs`
-- instantiate `WebUi` brick in this way:
-
-```python
-ui = WebUI(use_tls=True, certs_dir_path='/app/certs')
+```text
+Phone camera
+    │  Arduino IoT Remote / encrypted WebSocket
+    ▼
+Arduino UNO Q ── VideoObjectDetection (Edge Impulse .eim model)
+    │                         │
+    │                         ├── labels + confidence ──► Browser dashboard
+    │                         └── bridge call ──────────► Built-in LED
+    └── WebUI + QR pairing + confidence-threshold control
 ```
+
+The Python application creates a short pairing secret, starts the WebSocket camera and detection brick, and sends status and detection events to the web interface. The browser renders the stream, QR code, adjustable confidence threshold, feedback, and recent detections.
+
+## 🧠 Computer-vision model and training
+
+The app is configured to use an **Edge Impulse object-detection model**:
+
+| Setting | Repository configuration |
+| --- | --- |
+| Model identifier | `ei-model-1034592-3` |
+| Model file | `/home/arduino/.arduino-bricks/ei-models/mindful-drive-pro-.eim` |
+| Detection brick | `arduino:video_object_detection` |
+| Initial confidence threshold | `0.5` (can be changed in the UI) |
+
+The model file is fetched/managed by the Arduino video object-detection brick; it is not checked into this repository. The repository does **not** document the training dataset, class list, model architecture, training settings, or evaluation results, so those details cannot be confirmed here. The app’s feedback UI includes labels such as cat, cell phone, clock, cup, dog, and potted plant; this alone does not establish the model’s full label set.
+
+### Training or updating the model
+
+To produce a new model for this project, use an Edge Impulse object-detection workflow:
+
+1. Collect representative camera images for the intended use case and annotate each target object with bounding boxes and consistent labels.
+2. Split the annotated data into training, validation, and test sets. Include realistic variation in lighting, distance, camera angle, and background.
+3. Train an object-detection model in Edge Impulse, then evaluate it on held-out data. Record the dataset source, class list, training settings, and metrics alongside the model.
+4. Export/deploy a model compatible with the Arduino video object-detection brick and configure its model file and identifier in `app.yaml`.
+5. Test the exported model on the UNO Q and tune the confidence threshold against real camera streams.
+
+For actual drowsiness detection, the dataset and labels must represent relevant driver states, and the model must be evaluated for that purpose. This project is a prototype, not a safety-certified driver-monitoring system.
+
+## 🧰 Technology stack
+
+| Area | Technologies |
+| --- | --- |
+| Edge hardware | Arduino UNO Q |
+| Runtime and app backend | Python, Arduino App Lab / `arduino.app_utils` |
+| Camera and inference | `WebSocketCamera`, `VideoObjectDetection`, Edge Impulse `.eim` model |
+| Web interface | HTML, CSS, JavaScript, Arduino `WebUI` |
+| Browser utilities | Socket.IO, QRCode.js |
+| Hardware control | Arduino sketch, `Arduino_RouterBridge.h`, built-in LED |
+
+## 🚀 Getting started
+
+### Requirements
+
+- Arduino UNO Q set up with Arduino App Lab
+- Arduino IoT Remote app on an iOS or Android phone
+- Phone and board connected to the same network
+- A computer or phone browser to open the app UI
+
+### Run the project
+
+1. Open this project in Arduino App Lab on the UNO Q and run the app.
+2. Open the app UI using the URL provided by Arduino App Lab if it does not open automatically.
+3. Open Arduino IoT Remote on your phone, choose **Stream phone camera to UNO Q**, and scan the QR code shown in the UI.
+4. Start the camera stream. Detections, confidence scores, and the latest results will appear in the dashboard.
+5. Adjust the confidence threshold in the UI to change which detections are reported.
+
+## 📁 Project layout
+
+```text
+.
+├── app.yaml             # Arduino App Lab configuration and model settings
+├── python/main.py       # Camera, inference, UI events, and LED bridge calls
+├── sketch/sketch.ino    # UNO Q built-in LED bridge handler
+└── assets/              # Web UI, styles, fonts, and images
+```
+
+## 👨‍💻 About the developer
+
+Created by **Gavindu Achintha** as an Arduino UNO Q and edge-computer-vision project.
+
+[![GitHub](https://img.shields.io/badge/GitHub-Gavinduachintha-181717?style=for-the-badge&logo=github)](https://github.com/Gavinduachintha)
+
+## ⚠️ Safety note
+
+This is an experimental learning project. It is not a certified driver-monitoring, medical, or vehicle-safety system. Do not rely on it to determine whether someone is safe to drive.
+
+---
+
+<div align="center">
+
+Built with curiosity, computer vision, and Arduino.
+
+</div>
